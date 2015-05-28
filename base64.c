@@ -184,6 +184,65 @@ inline bool valid_char (const char c)
 	return (c >= '/' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '+';
 }
 
+inline uint8_t char_value(const char c)
+{
+	if (c >= 'A' && c <= 'Z')
+		return c - 'A';
+	else if (c >= 'a' && c <= 'z')
+		return 26 + (c - 'a');
+	else if (c >= '0' && c <= '9')
+		return 52 + (c - '0');
+	else if (c == '+')
+		return 62;
+	else if (c == '/')
+		return 63;
+	else
+		return 0;
+}
+
+static void decode_4char (const char *input, uint8_t *output)
+{
+	uint8_t in[4];
+	
+	in[0] = char_value((uint8_t)input[0]);
+	in[1] = char_value((uint8_t)input[1]);
+	in[2] = char_value((uint8_t)input[2]);
+	in[3] = char_value((uint8_t)input[3]);
+	
+	// restore the encoded bytes
+	// input:  00abcdef 00ghijkl 00mnopqr 00stuvwx
+	// output: abcdefgh ijklmnop qrstuvwx
+	output[0] = (in[0] << 2) | (in[1] >> 4);
+	output[1] = (in[1] << 4) | (in[2] >> 2);
+	output[2] = (in[2] << 6) | in[3];
+}
+
+static void decode_3char (const char *input, uint8_t *output)
+{
+	uint8_t in[3];
+	
+	in[0] = char_value((uint8_t)input[0]);
+	in[1] = char_value((uint8_t)input[1]);
+	in[2] = char_value((uint8_t)input[2]);
+	
+	// input:  00abcdef 00ghijkl 00mnop00 =
+	// output: abcdefgh ijklmnop
+	output[0] = (in[0] << 2) | (in[1] >> 4);
+	output[1] = (in[1] << 4) | (in[2] >> 2);
+}
+
+static void decode_2char (const char *input, uint8_t *output)
+{
+	uint8_t in[2];
+	
+	in[0] = char_value((uint8_t)input[0]);
+	in[1] = char_value((uint8_t)input[1]);
+	
+	// input:  00abcdef 00gh0000 = =
+	// output: abcdefgh
+	output[0] = (in[0] << 2) | (in[1] >> 4);
+}
+
 static void decode_4char (const char *input, uint8_t *output)
 {
 	const uint8_t *in = (const uint8_t*)input;  // cast to unsigned to avoid signedness issues when bitshifting
